@@ -3,10 +3,12 @@ package dev.isavin.reservation.rest;
 import dev.isavin.reservation.inventory.InventoryClient;
 import dev.isavin.reservation.model.Car;
 import dev.isavin.reservation.model.Reservation;
+import dev.isavin.reservation.poi.rental.RentalClient;
 import dev.isavin.reservation.storage.ReservationsRepository;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
 import java.time.LocalDate;
@@ -17,11 +19,20 @@ import java.util.Map;
 
 @Path("reservation")
 @Produces(MediaType.APPLICATION_JSON)
-@RequiredArgsConstructor
 public class ReservationResource {
 
+  private final RentalClient rentalClient;
   private final InventoryClient inventoryClient;
   private final ReservationsRepository reservationsRepository;
+
+  public ReservationResource(
+      ReservationsRepository reservations,
+      InventoryClient inventoryClient,
+      @RestClient RentalClient rentalClient) {
+    this.reservationsRepository = reservations;
+    this.inventoryClient = inventoryClient;
+    this.rentalClient = rentalClient;
+  }
 
   /**
    * @param startDate format is YYYY-MM-DD
@@ -55,7 +66,13 @@ public class ReservationResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   public Reservation make(Reservation reservation) {
-    return reservationsRepository.save(reservation);
+    Reservation result = reservationsRepository.save(reservation);
+    // this is just a dummy value for the time being
+    String userId = "x";
+    if (reservation.getStartDay().equals(LocalDate.now())) {
+      rentalClient.start(userId, result.getId());
+    }
+    return result;
   }
 
 }
