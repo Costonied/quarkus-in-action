@@ -1,11 +1,14 @@
-package dev.isavin.reservation;
+package dev.isavin.reservation.model;
 
+import lombok.Getter;
+
+@Getter
 public class Car {
 
-  public final Long id;
-  public final String model;
-  public final String manufacturer;
-  public final String licensePlateNumber;
+  private final Long id;
+  private final String model;
+  private final String manufacturer;
+  private final String licensePlateNumber;
 
   public Car(Long id, String licensePlateNumber, String manufacturer, String model) {
     this.id =id;
