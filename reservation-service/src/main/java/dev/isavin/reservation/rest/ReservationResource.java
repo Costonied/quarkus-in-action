@@ -5,9 +5,9 @@ import dev.isavin.reservation.model.Car;
 import dev.isavin.reservation.model.Reservation;
 import dev.isavin.reservation.poi.rental.RentalClient;
 import dev.isavin.reservation.storage.ReservationsRepository;
+import io.quarkus.logging.Log;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
@@ -66,6 +66,7 @@ public class ReservationResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   public Reservation make(Reservation reservation) {
+    Log.info("-> POST /reservation: carId = %s".formatted(reservation.getCarId()));
     Reservation result = reservationsRepository.save(reservation);
     // this is just a dummy value for the time being
     String userId = "x";
