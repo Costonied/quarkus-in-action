@@ -1,12 +1,15 @@
 package dev.isavin.reservation.inventory;
 
 import dev.isavin.reservation.model.Car;
+import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 import org.eclipse.microprofile.graphql.Query;
 
 import java.util.List;
 
-public interface InventoryClient {
-  // Don't work properly without '@Query(value = "cars")' here
+@GraphQLClientApi(configKey = "inventory")
+public interface GraphQLInventoryClient extends InventoryClient {
+
   @Query(value = "cars")
   List<Car> allCars();
+
 }

@@ -5,10 +5,14 @@ import lombok.Getter;
 @Getter
 public class Car {
 
-  private final Long id;
-  private final String model;
-  private final String manufacturer;
-  private final String licensePlateNumber;
+  private Long id;
+  private String model;
+  private String manufacturer;
+  private String licensePlateNumber;
+
+  public Car() {
+    // need here for correct work of deserialization
+  }
 
   public Car(Long id, String licensePlateNumber, String manufacturer, String model) {
     this.id =id;

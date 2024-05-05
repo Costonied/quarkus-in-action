@@ -1,11 +1,13 @@
 package dev.isavin.reservation.rest;
 
+import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.inventory.InventoryClient;
 import dev.isavin.reservation.model.Car;
 import dev.isavin.reservation.model.Reservation;
 import dev.isavin.reservation.poi.rental.RentalClient;
 import dev.isavin.reservation.storage.ReservationsRepository;
 import io.quarkus.logging.Log;
+import io.smallrye.graphql.client.GraphQLClient;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -27,7 +29,7 @@ public class ReservationResource {
 
   public ReservationResource(
       ReservationsRepository reservations,
-      InventoryClient inventoryClient,
+      @GraphQLClient("inventory") GraphQLInventoryClient inventoryClient,
       @RestClient RentalClient rentalClient) {
     this.reservationsRepository = reservations;
     this.inventoryClient = inventoryClient;
