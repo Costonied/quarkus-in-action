@@ -17,7 +17,27 @@ public class GrpcInventoryService implements InventoryService {
   CarInventory inventory;
 
   @Override
-  public Multi<CarResponse> add(Multi<InsertCarRequest> requests) {
+  public Uni<CarResponse> add(InsertCarRequest request) {
+
+    Car car = new Car();
+    car.setLicensePlateNumber(request.getLicensePlateNumber());
+    car.setManufacturer(request.getManufacturer());
+    car.setModel(request.getModel());
+    car.setId(CarInventory.ids.incrementAndGet());
+
+    inventory.getCars().add(car);
+
+    return Uni.createFrom().item(CarResponse.newBuilder()
+        .setId(car.getId())
+        .setModel(car.getModel())
+        .setManufacturer(car.getManufacturer())
+        .setLicensePlateNumber(car.getLicensePlateNumber())
+        .build());
+
+  }
+
+  @Override
+  public Multi<CarResponse> addViaStream(Multi<InsertCarRequest> requests) {
 
     return requests
         .map(request -> {
