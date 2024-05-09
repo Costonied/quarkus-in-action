@@ -1,4 +1,4 @@
-package dev.isavin.reservation.rest;
+package dev.isavin.reservation.api.rest;
 
 import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.inventory.InventoryClient;
@@ -8,8 +8,10 @@ import dev.isavin.reservation.poi.rental.RentalClient;
 import dev.isavin.reservation.storage.ReservationsRepository;
 import io.quarkus.logging.Log;
 import io.smallrye.graphql.client.GraphQLClient;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
@@ -22,6 +24,9 @@ import java.util.Map;
 @Path("reservation")
 @Produces(MediaType.APPLICATION_JSON)
 public class ReservationResource {
+
+  @Inject
+  SecurityContext securityContext;
 
   private final RentalClient rentalClient;
   private final InventoryClient inventoryClient;
@@ -65,10 +70,19 @@ public class ReservationResource {
 
   }
 
+  /**
+   * Create a new reservation
+   */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   public Reservation make(Reservation reservation) {
-    Log.info("-> POST /reservation: carId = %s".formatted(reservation.getCarId()));
+
+    reservation.setUserId(securityContext.getUserPrincipal() != null ?
+        securityContext.getUserPrincipal().getName() :
+        "anonymous");
+
+    Log.info("-> POST /reservation: carId = %s, userId = %s"
+        .formatted(reservation.getCarId(), reservation.getUserId()));
     Reservation result = reservationsRepository.save(reservation);
     // this is just a dummy value for the time being
     String userId = "x";
@@ -76,6 +90,19 @@ public class ReservationResource {
       rentalClient.start(userId, result.getId());
     }
     return result;
+  }
+
+  /**
+   * Get all reservations belonging to the current user
+   */
+  @GET
+  @Path("all")
+  public Collection<Reservation> allReservations() {
+    String userId = securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName() : null;
+    return reservationsRepository
+        .findAll().stream()
+        .filter(reservation -> userId == null || userId.equalsIgnoreCase(reservation.getUserId()))
+        .toList();
   }
 
 }

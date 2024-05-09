@@ -1,5 +1,6 @@
 package dev.isavin.reservation.rest;
 
+import dev.isavin.reservation.api.rest.ReservationResource;
 import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.model.Car;
 import dev.isavin.reservation.model.Reservation;
