@@ -1,4 +1,4 @@
-{@org.acme.users.model.Car[] cars}
+{@dev.isavin.users.model.Car[] cars}
 {@java.time.LocalDate startDate}
 {@java.time.LocalDate endDate}
 
@@ -15,7 +15,7 @@
     </thead>
     {#for car in cars}
         <tr>
-            <td>{car.getId()}</td>
+            <td>{car.id}</td>
             <td>{car.licensePlateNumber}</td>
             <td>{car.manufacturer}</td>
             <td>{car.model}</td>
