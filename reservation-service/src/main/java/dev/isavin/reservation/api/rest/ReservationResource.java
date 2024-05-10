@@ -1,14 +1,14 @@
 package dev.isavin.reservation.api.rest;
 
+import dev.isavin.reservation.entity.Reservation;
 import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.inventory.InventoryClient;
 import dev.isavin.reservation.model.Car;
-import dev.isavin.reservation.model.Reservation;
 import dev.isavin.reservation.poi.rental.RentalClient;
-import dev.isavin.reservation.storage.ReservationsRepository;
 import io.quarkus.logging.Log;
 import io.smallrye.graphql.client.GraphQLClient;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
@@ -30,13 +30,11 @@ public class ReservationResource {
 
   private final RentalClient rentalClient;
   private final InventoryClient inventoryClient;
-  private final ReservationsRepository reservationsRepository;
 
   public ReservationResource(
-      ReservationsRepository reservations,
-      @GraphQLClient("inventory") GraphQLInventoryClient inventoryClient,
+      @GraphQLClient("inventory")
+      GraphQLInventoryClient inventoryClient,
       @RestClient RentalClient rentalClient) {
-    this.reservationsRepository = reservations;
     this.inventoryClient = inventoryClient;
     this.rentalClient = rentalClient;
   }
@@ -59,7 +57,7 @@ public class ReservationResource {
       carsById.put(car.getId(), car);
     }
     // get all current reservations
-    List<Reservation> reservations = reservationsRepository.findAll();
+    List<Reservation> reservations = Reservation.listAll();
     // for each reservation, remove the car from the map
     for (Reservation reservation : reservations) {
       if (reservation.isReserved(startDate, endDate)) {
@@ -75,6 +73,7 @@ public class ReservationResource {
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
+  @Transactional
   public Reservation make(Reservation reservation) {
 
     reservation.setUserId(securityContext.getUserPrincipal() != null ?
@@ -83,13 +82,14 @@ public class ReservationResource {
 
     Log.info("-> POST /reservation: carId = %s, userId = %s"
         .formatted(reservation.getCarId(), reservation.getUserId()));
-    Reservation result = reservationsRepository.save(reservation);
+    reservation.persist();
+    Log.info("Successfully reserved reservation " + reservation);
     // this is just a dummy value for the time being
     String userId = "x";
     if (reservation.getStartDay().equals(LocalDate.now())) {
-      rentalClient.start(userId, result.getId());
+      rentalClient.start(userId, reservation.getId());
     }
-    return result;
+    return reservation;
   }
 
   /**
@@ -99,8 +99,8 @@ public class ReservationResource {
   @Path("all")
   public Collection<Reservation> allReservations() {
     String userId = securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName() : null;
-    return reservationsRepository
-        .findAll().stream()
+    return Reservation
+        .<Reservation>streamAll()
         .filter(reservation -> userId == null || userId.equalsIgnoreCase(reservation.getUserId()))
         .toList();
   }
