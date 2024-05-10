@@ -1,8 +1,9 @@
 package dev.isavin.inventory.service;
 
-import dev.isavin.inventory.database.CarInventory;
 import dev.isavin.inventory.model.Car;
+import dev.isavin.inventory.repository.CarRepository;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
@@ -14,28 +15,28 @@ import java.util.Optional;
 public class GraphQLInventoryService {
 
   @Inject
-  CarInventory inventory;
+  CarRepository carRepository;
 
   @Query
   public List<Car> cars() {
-    return inventory.getCars();
+    return carRepository.listAll();
   }
 
   @Mutation
+  @Transactional
   public Car register(Car car) {
-    car.setId(CarInventory.ids.incrementAndGet());
-    inventory.getCars().add(car);
+    carRepository.persist(car);
     return car;
   }
 
   @Mutation
+  @Transactional
   public boolean remove(String licensePlateNumber) {
-    List<Car> cars = inventory.getCars();
-    Optional<Car> toBeRemoved = cars.stream()
-        .filter(car -> car.getLicensePlateNumber().equals(licensePlateNumber))
-        .findAny();
+    Optional<Car> toBeRemoved = carRepository
+        .findByLicensePlateNumberOptional(licensePlateNumber);
     if (toBeRemoved.isPresent()) {
-      return cars.remove(toBeRemoved.get());
+      carRepository.delete(toBeRemoved.get());
+      return true;
     } else {
       return false;
     }
