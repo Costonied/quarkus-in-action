@@ -7,3 +7,9 @@
 ## Files which help you
 * docker-compose.yml - run all containers
 * car-rental.json - security configuration for Keycloak. Container just import this
+
+## How to start containers
+Just run docker compose and that's it:
+```shell
+docker-compose up
+```
