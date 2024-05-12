@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class Rental {
 
-  private final Long id;
+  private final String id;
   private final String userId;
   private final Long reservationId;
   private final LocalDate startDate;
