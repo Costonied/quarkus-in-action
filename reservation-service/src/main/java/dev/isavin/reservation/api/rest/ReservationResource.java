@@ -4,7 +4,6 @@ import dev.isavin.reservation.entity.Reservation;
 import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.inventory.InventoryClient;
 import dev.isavin.reservation.model.Car;
-import dev.isavin.reservation.poi.rental.Rental;
 import dev.isavin.reservation.poi.rental.RentalClient;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.logging.Log;
@@ -78,26 +77,22 @@ public class ReservationResource {
   /**
    * Create a new reservation
    */
-  @POST
   @Consumes(MediaType.APPLICATION_JSON)
+  @POST
   @WithTransaction
   public Uni<Reservation> make(Reservation reservation) {
-
     reservation.userId = securityContext.getUserPrincipal() != null ?
         securityContext.getUserPrincipal().getName() : "anonymous";
-
-    Log.info("-> POST /reservation: carId = %s, userId = %s"
-        .formatted(reservation.carId, reservation.userId));
-
-    return reservation
-        .<Reservation>persist().onItem()
+    return reservation.<Reservation>persist().onItem()
         .call(persistedReservation -> {
           Log.info("Successfully reserved reservation " + persistedReservation);
-          if (persistedReservation.startDay.equals(LocalDate.now()) && persistedReservation.userId != null) {
-            Rental rental = rentalClient.start(
-                persistedReservation.userId,
-                persistedReservation.id);
-            Log.info("Successfully started rental " + rental);
+          if (persistedReservation.startDay.equals(LocalDate.now())) {
+            return rentalClient.start(persistedReservation.userId,
+                    persistedReservation.id)
+                .onItem().invoke(rental ->
+                    Log.info("Successfully started rental " + rental))
+                .replaceWith(persistedReservation);
+
           }
           return Uni.createFrom().item(persistedReservation);
         });
