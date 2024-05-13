@@ -34,11 +34,10 @@ class ReservationResourceTest {
   @Test
   void testReservationIds() {
 
-    Reservation reservation = Reservation.builder()
-        .carId(12345L)
-        .startDay(LocalDate.parse("2025-03-20"))
-        .endDay(LocalDate.parse("2025-03-29"))
-        .build();
+    Reservation reservation = new Reservation();
+    reservation.startDay = LocalDate.parse("2025-03-20");
+    reservation.endDay = LocalDate.parse("2025-03-29");
+    reservation.carId = 384L;
 
     RestAssured.given()
         .contentType(ContentType.JSON)
@@ -74,11 +73,11 @@ class ReservationResourceTest {
     // Choose one of the cars
     Car car = cars[0];
     // Prepare a Reservation object
-    Reservation reservation = Reservation.builder()
-        .carId(car.getId())
-        .startDay(LocalDate.parse(startDate))
-        .endDay(LocalDate.parse(endDate))
-        .build();
+    Reservation reservation = new Reservation();
+    reservation.startDay = LocalDate.parse(startDate);
+    reservation.endDay = LocalDate.parse(endDate);
+    reservation.carId = car.getId();
+
     // Submit the reservation
     RestAssured
         .given().contentType(ContentType.JSON).body(reservation)
