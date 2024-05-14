@@ -1,9 +1,9 @@
 package dev.isavin.reservation.rest;
 
 import dev.isavin.reservation.api.rest.ReservationResource;
+import dev.isavin.reservation.entity.Reservation;
 import dev.isavin.reservation.inventory.GraphQLInventoryClient;
 import dev.isavin.reservation.model.Car;
-import dev.isavin.reservation.entity.Reservation;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -11,12 +11,13 @@ import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 
@@ -58,10 +59,14 @@ class ReservationResourceTest {
     String startDate = "2022-01-01";
     String endDate = "2022-01-10";
     Car peugeot = new Car(1L, "ABC 123", "Peugeot", "406");
+
     // Prepare mocks
     GraphQLInventoryClient mock = Mockito.mock(GraphQLInventoryClient.class);
-    Mockito.when(mock.allCars()).thenReturn(Collections.singletonList(peugeot));
+    Mockito.when(mock.allCars())
+        .thenReturn(Uni.createFrom()
+            .item(List.of(peugeot)));
     QuarkusMock.installMockForType(mock, GraphQLInventoryClient.class);
+
     // Action and asserts
     // Get the list of available cars for our requested timeslot
     Car[] cars = RestAssured.given()

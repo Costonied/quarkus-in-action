@@ -18,9 +18,9 @@ import org.jboss.resteasy.reactive.RestQuery;
 
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Path("reservation")
@@ -51,66 +51,67 @@ public class ReservationResource {
       @RestQuery LocalDate startDate,
       @RestQuery LocalDate endDate) {
 
-    // obtain all cars from inventory
-    List<Car> availableCars = inventoryClient.allCars();
-    // create a map from id to car
-    Map<Long, Car> carsById = new HashMap<>();
-    for (Car car : availableCars) {
-      carsById.put(car.getId(), car);
+    Uni<Map<Long, Car>> carsUni = inventoryClient.allCars()
+        .map(cars -> cars.stream().collect(Collectors
+            .toMap(Car::getId, Function.identity())));
+
+    Uni<List<Reservation>> reservationsUni = Reservation.listAll();
+
+    return Uni
+        .combine().all()
+        .unis(carsUni, reservationsUni).asTuple()
+        .chain(tuple -> {
+            Map<Long,Car> carsById = tuple.getItem1();
+            List<Reservation> reservations = tuple.getItem2();
+            // for each reservation, remove the car from the map
+            for(Reservation reservation : reservations) {
+              if (reservation.isReserved(startDate, endDate)) {
+                carsById.remove(reservation.carId);
+              }
+            }
+            return Uni.createFrom()
+                .item(carsById.values());
+        });
+
     }
 
-    // get all current reservations
-    return Reservation
-        .<Reservation>listAll().onItem()
-        .transform(reservations -> {
-          // for each reservation, remove the car from the map
-          for (Reservation reservation : reservations) {
-            if (reservation.isReserved(startDate, endDate)) {
-              carsById.remove(reservation.carId);
-            }
-          }
-          return carsById.values();
-        });
+/**
+ * Create a new reservation
+ */
+@Consumes(MediaType.APPLICATION_JSON)
+@POST
+@WithTransaction
+public Uni<Reservation> make(Reservation reservation) {
+  reservation.userId = securityContext.getUserPrincipal() != null ?
+      securityContext.getUserPrincipal().getName() : "anonymous";
+  return reservation.<Reservation>persist().onItem()
+      .call(persistedReservation -> {
+        Log.info("Successfully reserved reservation " + persistedReservation);
+        if (persistedReservation.startDay.equals(LocalDate.now())) {
+          return rentalClient.start(persistedReservation.userId,
+                  persistedReservation.id)
+              .onItem().invoke(rental ->
+                  Log.info("Successfully started rental " + rental))
+              .replaceWith(persistedReservation);
 
-  }
+        }
+        return Uni.createFrom().item(persistedReservation);
+      });
+}
 
-  /**
-   * Create a new reservation
-   */
-  @Consumes(MediaType.APPLICATION_JSON)
-  @POST
-  @WithTransaction
-  public Uni<Reservation> make(Reservation reservation) {
-    reservation.userId = securityContext.getUserPrincipal() != null ?
-        securityContext.getUserPrincipal().getName() : "anonymous";
-    return reservation.<Reservation>persist().onItem()
-        .call(persistedReservation -> {
-          Log.info("Successfully reserved reservation " + persistedReservation);
-          if (persistedReservation.startDay.equals(LocalDate.now())) {
-            return rentalClient.start(persistedReservation.userId,
-                    persistedReservation.id)
-                .onItem().invoke(rental ->
-                    Log.info("Successfully started rental " + rental))
-                .replaceWith(persistedReservation);
-
-          }
-          return Uni.createFrom().item(persistedReservation);
-        });
-  }
-
-  /**
-   * Get all reservations belonging to the current user
-   */
-  @GET
-  @Path("all")
-  public Uni<List<Reservation>> allReservations() {
-    String userId = securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName() : null;
-    return Reservation
-        .<Reservation>listAll().onItem()
-        .transform(reservations ->
-            reservations.stream()
-                .filter(reservation -> userId == null || userId.equals(reservation.userId))
-                .collect(Collectors.toList()));
-  }
+/**
+ * Get all reservations belonging to the current user
+ */
+@GET
+@Path("all")
+public Uni<List<Reservation>> allReservations() {
+  String userId = securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName() : null;
+  return Reservation
+      .<Reservation>listAll().onItem()
+      .transform(reservations ->
+          reservations.stream()
+              .filter(reservation -> userId == null || userId.equals(reservation.userId))
+              .collect(Collectors.toList()));
+}
 
 }
