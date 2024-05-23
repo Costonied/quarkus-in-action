@@ -107,10 +107,9 @@ public class ReservationResource {
                           .formatted(persistedReservation, throwable.getMessage())));
 
           if (persistedReservation.startDay.equals(LocalDate.now())) {
-            return invoiceUni.chain(() -> rentalClient.start(persistedReservation.userId,
-                    persistedReservation.id)
-                .onItem().invoke(rental ->
-                    Log.info("Successfully started rental " + rental))
+            return invoiceUni
+                .chain(() -> rentalClient.start(persistedReservation.userId, persistedReservation.id)
+                .onItem().invoke(rental -> Log.info("Successfully started rental " + rental))
                 .replaceWith(persistedReservation));
 
           }
