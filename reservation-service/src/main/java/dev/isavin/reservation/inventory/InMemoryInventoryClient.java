@@ -1,9 +1,10 @@
 package dev.isavin.reservation.inventory;
 
-import java.util.List;
-
 import dev.isavin.reservation.model.Car;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
+
+import java.util.List;
 
 @Singleton
 public class InMemoryInventoryClient implements InventoryClient {
@@ -16,8 +17,7 @@ public class InMemoryInventoryClient implements InventoryClient {
   );
 
   @Override
-  public List<Car> allCars() {
-    return ALL_CARS;
+  public Uni<List<Car>> allCars() {
+    return Uni.createFrom().item(ALL_CARS);
   }
-
 }
