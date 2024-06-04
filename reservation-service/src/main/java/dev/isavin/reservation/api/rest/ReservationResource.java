@@ -15,6 +15,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestQuery;
@@ -57,9 +58,13 @@ public class ReservationResource {
    */
   @GET
   @Path("availability")
+  @Retry(maxRetries = 25, delay = 1000)
   public Uni<Collection<Car>> availability(
       @RestQuery LocalDate startDate,
       @RestQuery LocalDate endDate) {
+
+    Log.info("-> /reservation/availability: startDate = %s, endDate=%s"
+        .formatted(startDate, endDate));
 
     Uni<Map<Long, Car>> carsUni = inventoryClient.allCars()
         .map(cars -> cars.stream().collect(Collectors
