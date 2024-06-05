@@ -15,6 +15,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -58,7 +59,8 @@ public class ReservationResource {
    */
   @GET
   @Path("availability")
-  @Retry(maxRetries = 25, delay = 1000)
+  @Retry(maxRetries = 5, delay = 1000)
+  @Fallback(fallbackMethod = "availabilityFallback")
   public Uni<Collection<Car>> availability(
       @RestQuery LocalDate startDate,
       @RestQuery LocalDate endDate) {
@@ -91,6 +93,18 @@ public class ReservationResource {
   }
 
   /**
+   * Fallback method.
+   * Used when original method "availability" spent all retry attempts.
+   * Signature of the method should be the same.
+   */
+  public Uni<Collection<Car>> availabilityFallback(
+      LocalDate startDate,
+      LocalDate endDate) {
+    Log.info("--> availabilityFallback");
+    return Uni.createFrom().item(List.of());
+  }
+
+  /**
    * Create a new reservation
    */
   @Consumes(MediaType.APPLICATION_JSON)
@@ -114,8 +128,8 @@ public class ReservationResource {
           if (persistedReservation.startDay.equals(LocalDate.now())) {
             return invoiceUni
                 .chain(() -> rentalClient.start(persistedReservation.userId, persistedReservation.id)
-                .onItem().invoke(rental -> Log.info("Successfully started rental " + rental))
-                .replaceWith(persistedReservation));
+                    .onItem().invoke(rental -> Log.info("Successfully started rental " + rental))
+                    .replaceWith(persistedReservation));
 
           }
           return Uni.createFrom().item(persistedReservation);
