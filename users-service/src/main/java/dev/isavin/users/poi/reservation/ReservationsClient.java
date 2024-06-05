@@ -14,7 +14,7 @@ import java.util.Collection;
 
 @AccessToken
 @Path("reservation")
-@RegisterRestClient(baseUri = "http://localhost:8081")
+@RegisterRestClient(configKey = "reservations")
 public interface ReservationsClient {
 
   @GET
