@@ -6,7 +6,7 @@ services:
     container_name: keycloak
     user: "${UID}"
     volumes:
-      - "./car-rental.json:/opt/keycloak/data/import/car-rental.json:Z"
+      - "./car-rental-dependencies/car-rental.json:/opt/keycloak/data/import/car-rental.json:Z"
     command:
       - start-dev
       - --import-realm
@@ -47,7 +47,7 @@ services:
     ports:
       - "27017:27017"
 
-  # MongoDB for Rental service
+  # MongoDB for Billing service
   mongodb-billing:
     image: mongo:4.4
     container_name: mongodb-billing
@@ -105,7 +105,7 @@ services:
     container_name: prometheus
     network_mode: host
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:Z
+      - ./car-rental-dependencies/prometheus.yml:/etc/prometheus/prometheus.yml:Z
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
 
@@ -114,9 +114,9 @@ services:
     container_name: grafana
     network_mode: host
     volumes:
-      - ./datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:Z
-      - ./inventory-service-dashboard.json:/etc/grafana/provisioning/dashboards/inventory-service-dashboard.json:Z
-      - ./dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml:Z
+      - ./car-rental-dependencies/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:Z
+      - ./car-rental-dependencies/inventory-service-dashboard.json:/etc/grafana/provisioning/dashboards/inventory-service-dashboard.json:Z
+      - ./car-rental-dependencies/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml:Z
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
